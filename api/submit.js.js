@@ -1,36 +1,40 @@
-import { createClient } from '@supabase/supabase-js';
+<script>
+// تهيئة الاتصال بـ Supabase
+const SUPABASE_URL = 'https://vfmfumnbretrwduyrvex.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_kJ2Oqq-m5L_Qs2yVnSbg2w_a0lm2gVn';
 
-// استدعاء القيم من متغيرات بيئة Vercel
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+async function submitForm(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    const name = form.querySelector('input[type="text"]').value;
+    const phone = form.querySelector('input[type="tel"]').value;
+    const email = form.querySelector('input[type="email"]').value;
+    const message = form.querySelector('textarea').value;
 
-export default async function handler(req, res) {
-  // استقبال طلبات POST فقط
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
+    const originalText = submitBtn.innerText;
+    submitBtn.disabled = true;
+    submitBtn.innerText = 'جاري الإرسال...';
 
-  const { name, phone, email, message } = req.body;
+    try {
+        const { data, error } = await _supabase
+            .from('contacts')
+            .insert([{ name, phone, email, message }]);
 
-  // التحقق من الحقول الإلزامية
-  if (!name || !phone || !message) {
-    return res.status(400).json({ message: 'يرجى ملء جميع الحقول المطلوبة' });
-  }
+        if (error) throw error;
 
-  try {
-    // إدخال البيانات في جدول contacts في Supabase
-    const { data, error } = await supabase
-      .from('contacts')
-      .insert([{ name, phone, email, message }]);
-
-    if (error) {
-      throw error;
+        alert('تم إرسال الطلب بنجاح!');
+        form.reset();
+    } catch (err) {
+        console.error('Error:', err);
+        alert('حدث خطأ أثناء الإرسال: ' + err.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = originalText;
     }
-
-    return res.status(200).json({ success: true, message: 'تم إرسال البيانات بنجاح' });
-  } catch (error) {
-    return res.status(500).json({ message: error.message || 'حدث خطأ في السيرفر' });
-  }
 }
+</script>
